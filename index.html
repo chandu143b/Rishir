@@ -196,17 +196,8 @@ h1{font-size:30px;line-height:1.05;margin:2px 0 10px;font-weight:800}
      appId: "1:123:web:abc"
    };
 */
-
-const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyBWcTtles5XoSdY74miFGeQpSDU9mnFwjg",
-    authDomain: "rishir-6fc3d.firebaseapp.com",
-    databaseURL: "https://rishir-6fc3d-default-rtdb.firebaseio.com",
-    projectId: "rishir-6fc3d",
-    storageBucket: "rishir-6fc3d.firebasestorage.app",
-    messagingSenderId: "875975886886",
-    appId: "1:875975886886:web:bf8a6d7905b45a5c9cbee7"
-  };
-const FAMILY_CODE = "9894001566";
+const FIREBASE_CONFIG = null;
+const FAMILY_CODE = "change-this-secret-code";
 /* ========================================================= */
 
 /* ---------- Building blocks ---------- */
@@ -223,16 +214,16 @@ const morning = [
   R("06:40","🎒","Shoes on & go to the bus stop","Check: bag, water bottle, lunch. The bus comes at 6:50!"),
   R("06:50","🚌","On the bus to school","Have a great ride!"),
   SCHOOL("07:30"),
-  R("14:30","🏠","Home from school!","Wash your hands and unpack your bag."),
-  R("15:00","🍎","Snack & rest","Have a snack and relax for a bit.")
+  R("14:15","🏠","Home from school!","Wash your hands and unpack your bag."),
+  R("14:35","🍽️","Food time","Eat your after-school food and relax.")
 ];
 
 /* Mon, Tue, Fri */
 const regularDay = () => [
   ...morning,
-  T("read","15:30","📖","Reading","Read for 15 minutes. Tell someone your favorite part!"),
-  T("math","15:50","➕","Math","Do your math page. Check your answers."),
-  R("16:10","🧸","Play break"),
+  T("read","15:15","📖","Reading","Read for 15 minutes. Tell someone your favorite part!"),
+  T("math","15:35","➕","Math","Do your math page. Check your answers."),
+  R("15:55","🧸","Play break"),
   T("sport","16:30","⚽","Outdoor sports practice","Catching, kicking or tennis. Count how many you get!"),
   R("17:30","🧼","Come in & wash up"),
   T("write","17:45","✏️","Writing","Write 3 sentences. Neat letters and finger spaces!"),
@@ -246,12 +237,11 @@ const regularDay = () => [
 
 /* Wednesday: class 6–7 pm */
 const wednesday = () => [
-  ...morning.slice(0,-1),
-  R("15:00","🍎","Snack & rest","Quick snack. Busy afternoon today!"),
-  T("read","15:20","📖","Reading","Read for 15 minutes."),
-  T("math","15:40","➕","Math","Do your math page."),
-  T("ixl","16:00","💻","IXL","Do 15 minutes of IXL."),
-  T("write","16:15","✏️","Writing","Write 3 sentences."),
+  ...morning,
+  T("read","15:15","📖","Reading","Read for 15 minutes."),
+  T("math","15:35","➕","Math","Do your math page."),
+  T("ixl","15:55","💻","IXL","Do 15 minutes of IXL."),
+  T("write","16:10","✏️","Writing","Write 3 sentences."),
   T("sport","16:30","⚽","Outdoor sports practice","Practice outside until the clock says 5:15."),
   R("17:15","🧼","Come in & wash up"),
   R("17:30","🍝","Early dinner"),
@@ -265,8 +255,7 @@ const wednesday = () => [
 
 /* Thursday: class 4–5 pm */
 const thursday = () => [
-  ...morning.slice(0,-1),
-  R("15:00","🍎","Snack & rest","Quick snack. Class is soon!"),
+  ...morning,
   T("read","15:15","📖","Reading","Read for 15 minutes."),
   T("math","15:35","➕","Math","Do your math page."),
   R("15:50","👟","Get ready & leave for class","Shoes on, grab your things."),
@@ -325,7 +314,7 @@ function dateKey(d=new Date()){return "sw-done-"+d.getFullYear()+"-"+(d.getMonth
 
 function normalizeCfg(c){
   if(!c || typeof c!=="object" || !c.days) c = {name:"", days:{}};
-  if(c.v!==4){ c.days={}; c.v=4; }
+  if(c.v!==5){ for(const d of [1,2,3,4,5]) delete c.days[d]; c.v=5; }
   for(let d=0; d<7; d++){ if(!Array.isArray(c.days[d]) || !c.days[d].length) c.days[d]=defaultDay(d); }
   return c;
 }
