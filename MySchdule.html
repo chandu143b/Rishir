@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My School Week</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EAF4FB; --paper:#FFFFFF; --ink:#1F2A44; --muted:#5B6782;
+  --line:#CFE2F0; --pumpkin:#F28C28; --leaf:#3FA56F; --sun:#FFC93C;
+  --berry:#E2557B; --sky:#3B8FD9; --nowbg:#FFF3D6; --done:#E3F5EA;
+  --face:#FFFFFF; --hand:#1F2A44; --classbg:#DCEBFA;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131B2B; --paper:#1D2740; --ink:#EEF3FA; --muted:#A6B3CC; --line:#2E3B58;
+    --nowbg:#3A3020; --done:#1C3A2B; --face:#26324F; --hand:#EEF3FA; --classbg:#1E3352;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131B2B; --paper:#1D2740; --ink:#EEF3FA; --muted:#A6B3CC; --line:#2E3B58;
+  --nowbg:#3A3020; --done:#1C3A2B; --face:#26324F; --hand:#EEF3FA; --classbg:#1E3352;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Baloo 2","Comic Sans MS","Trebuchet MS",system-ui,sans-serif;
+  font-size:18px;line-height:1.35}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+
+.hero{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;
+  background:var(--paper);border-radius:28px;padding:20px;border:3px solid var(--line)}
+.bigclock svg{width:170px;height:170px;display:block}
+.hello{font-size:15px;color:var(--muted);margin:0}
+h1{font-size:30px;line-height:1.05;margin:2px 0 10px;font-weight:800}
+.nowbox{background:var(--nowbg);border-radius:18px;padding:10px 14px}
+.nowbox .lbl{font-size:15px;color:var(--muted)}
+.nowbox .what{font-size:26px;font-weight:800;line-height:1.1}
+.nextline{margin-top:8px;font-size:16px;color:var(--muted)}
+.nextline b{color:var(--ink)}
+
+.tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:18px 0 0}
+.tab{border:3px solid var(--line);background:var(--paper);color:var(--ink);border-radius:14px;
+  padding:6px 0 4px;font-weight:700;font-size:16px;line-height:1.1;min-height:52px}
+.tab small{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.tab.today{border-color:var(--pumpkin)}
+.tab.sel{background:var(--pumpkin);border-color:var(--pumpkin);color:#fff}
+.tab.sel small{color:#fff}
+.preview{margin:10px 0 0;background:var(--classbg);border-radius:14px;padding:8px 14px;font-size:16px;display:none}
+.preview.show{display:block}
+.preview button{border:0;background:none;color:var(--sky);font-weight:800;padding:0;text-decoration:underline}
+
+.stars{margin:12px 0 8px;background:var(--paper);border-radius:22px;padding:14px 16px;border:3px solid var(--line)}
+.stars p{margin:0 0 8px;font-weight:700}
+.slots{display:flex;gap:8px;flex-wrap:wrap}
+.slot{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:24px;
+  border:3px dashed var(--line);background:var(--bg);transition:transform .25s}
+.slot.got{border:3px solid var(--sun);background:var(--sun);transform:scale(1.05)}
+.wkrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.wk{text-align:center;width:56px}
+.wk small{font-size:13px;font-weight:700;color:var(--muted)}
+.wkc{width:52px;height:52px;margin:0 auto;border-radius:14px;display:grid;place-items:center;font-size:19px;font-weight:800;border:3px dashed var(--line);background:var(--bg)}
+.wk.full .wkc{border:3px solid var(--sun);background:var(--sun);color:#1F2A44}
+.wk.tod .wkc{border-color:var(--pumpkin);border-style:solid}
+.wk.tv .wkc{border:3px solid var(--berry);background:var(--berry)}
+
+.timeline{list-style:none;margin:22px 0 0;padding:0;position:relative}
+.timeline::before{content:"";position:absolute;left:31px;top:10px;bottom:10px;width:4px;background:var(--line);border-radius:2px}
+.row{display:grid;grid-template-columns:66px 1fr;gap:12px;align-items:start;margin-bottom:12px;position:relative}
+.mini{width:66px;text-align:center}
+.mini svg{width:58px;height:58px;display:block;margin:0 auto;background:var(--bg);border-radius:50%}
+.mini .t{font-size:15px;font-weight:700;color:var(--muted)}
+.item{background:var(--paper);border-radius:18px;padding:10px 14px;border:3px solid transparent}
+.item.routine{background:transparent;padding:14px 6px 6px}
+.item.routine .ttl{font-size:19px;font-weight:600}
+.item.task{border-color:var(--line);border-left:10px solid var(--c,var(--pumpkin))}
+.item.klass{background:var(--classbg);border-color:var(--sky)}
+.item.school{background:var(--classbg);border-color:transparent}
+.item.now{background:var(--nowbg);border-color:var(--pumpkin)}
+.item.routine.now{padding:10px 14px}
+.item.isdone{background:var(--done);border-color:var(--leaf)}
+.ttl{font-size:23px;font-weight:800;line-height:1.15}
+.tip{font-size:16px;color:var(--muted);margin-top:2px}
+.nowtag{display:inline-block;background:var(--pumpkin);color:#fff;border-radius:999px;padding:0 10px;font-size:14px;font-weight:700;margin-bottom:4px}
+.didit{margin-top:10px;border:0;border-radius:14px;padding:10px 18px;font-size:19px;font-weight:800;
+  background:var(--c,var(--pumpkin));color:#fff;min-height:48px}
+.didit:disabled{opacity:.45;cursor:default}
+.isdone .didit{background:transparent;color:var(--leaf);border:2px solid var(--leaf)}
+.row.past .item.routine{opacity:.55}
+
+.ticket{border-radius:18px;padding:14px;border:3px dashed var(--muted);background:var(--paper)}
+.ticket.open{border:3px solid var(--berry);background:var(--berry);color:#fff}
+.ticket.open .tip{color:#fff}
+
+.parent{margin-top:34px;border-top:3px dashed var(--line);padding-top:16px}
+.pbtns{display:flex;gap:8px;flex-wrap:wrap}
+.pbtn{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:12px;padding:8px 14px;font-size:16px;font-weight:600}
+.pbtn.on{border-color:var(--leaf);color:var(--leaf)}
+.editor{margin-top:14px;display:none}
+.editor.show{display:block}
+.editor h3{margin:6px 0 10px;font-size:20px}
+.editor .er{display:grid;grid-template-columns:110px 1fr;gap:8px;margin-bottom:10px}
+.editor input{font:inherit;font-size:16px;padding:6px 8px;border-radius:10px;border:2px solid var(--line);background:var(--paper);color:var(--ink);width:100%}
+.editor .tipin{grid-column:2}
+.note{font-size:15px;color:var(--muted)}
+
+.flash{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translateX(-50%);
+  background:var(--pumpkin);color:#fff;font-weight:800;font-size:20px;padding:10px 20px;border-radius:999px;
+  box-shadow:0 6px 0 rgba(0,0,0,.15);display:none;z-index:9;text-align:center;max-width:92vw}
+.confetti{position:fixed;top:-40px;font-size:28px;pointer-events:none;animation:fall 2.6s linear forwards;z-index:8}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.confetti{display:none}.slot{transition:none}}
+
+@media (max-width:520px){
+  .hero{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .bigclock svg{width:150px;height:150px}
+  h1{font-size:26px}
+  .tab{font-size:14px}
+}
+@media print{
+  .parent,.didit,.flash,.tabs,.preview{display:none!important}
+  body{background:#fff}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div class="bigclock" id="bigclock" aria-hidden="true"></div>
+    <div>
+      <p class="hello" id="hello"></p>
+      <h1 id="title">My School Week</h1>
+      <div class="nowbox" aria-live="polite">
+        <div class="lbl">Right now it's time for</div>
+        <div class="what" id="nowWhat"></div>
+      </div>
+      <div class="nextline" id="nextLine"></div>
+    </div>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Pick a day"></nav>
+  <div class="preview" id="preview"></div>
+
+  <section class="stars" aria-live="polite">
+    <p id="starText"></p>
+    <div class="slots" id="slots"></div>
+  </section>
+
+  <section class="stars" id="week" aria-live="polite"></section>
+
+  <ol class="timeline" id="list"></ol>
+
+  <section class="parent">
+    <div class="pbtns">
+      <button class="pbtn" id="soundBtn">🔔 Turn on chime</button>
+      <button class="pbtn" id="editBtn">✏️ Change times</button>
+      <button class="pbtn" id="resetBtn">↺ Clear today's stars</button>
+    </div>
+    <p class="note">The chime plays a little sound when it's time for the next activity. Keep this page open on a tablet or laptop. Stars reset by themselves every morning.</p>
+    <div class="editor" id="editor">
+      <div class="er"><span>Child's name</span><input id="nameIn" placeholder="e.g. Aarav"></div>
+      <h3 id="edTitle"></h3>
+      <div id="edRows"></div>
+      <div class="pbtns">
+        <button class="pbtn on" id="saveBtn">Save changes</button>
+        <button class="pbtn" id="defBtn">Use original times for this day</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="flash" id="flash"></div>
+
+<script>
+/* ---------- Building blocks ---------- */
+const COLORS = {read:"#3B8FD9", math:"#F28C28", write:"#8A5CD1", draw:"#E2557B", ixl:"#2A9D8F", sport:"#3FA56F"};
+const R = (time, emoji, title, tip="") => ({time, emoji, title, tip, type:"routine"});
+const T = (id, time, emoji, title, tip) => ({id, time, emoji, title, tip, type:"task", c:COLORS[id]});
+const SCHOOL = (time="08:00") => ({time, emoji:"🏫", title:"School", tip:"Have a great day! Listen and have fun.", type:"school"});
+const CLASS = (time, tip) => ({time, emoji:"🎒", title:"Class", tip, type:"class"});
+const TV = (time, tip) => ({time, emoji:"📺", title:"TV time", tip, type:"reward"});
+
+const morning = [
+  R("06:00","🌅","Wake up & get ready","Brush teeth, get dressed, make your bed."),
+  R("06:20","🥣","Breakfast"),
+  R("06:40","🎒","Shoes on & go to the bus stop","Check: bag, water bottle, lunch. The bus comes at 6:50!"),
+  R("06:50","🚌","On the bus to school","Have a great ride!"),
+  SCHOOL("07:30"),
+  R("14:30","🏠","Home from school!","Wash your hands and unpack your bag."),
+  R("15:00","🍎","Snack & rest","Have a snack and relax for a bit.")
+];
+
+/* Mon, Tue, Fri */
+const regularDay = () => [
+  ...morning,
+  T("read","15:30","📖","Reading","Read for 15 minutes. Tell someone your favorite part!"),
+  T("math","15:50","➕","Math","Do your math page. Check your answers."),
+  R("16:10","🧸","Play break"),
+  T("sport","16:30","⚽","Outdoor sports practice","Catching, kicking or tennis. Count how many you get!"),
+  R("17:30","🧼","Come in & wash up"),
+  T("write","17:45","✏️","Writing","Write 3 sentences. Neat letters and finger spaces!"),
+  R("18:00","🍝","Dinner"),
+  T("ixl","18:30","💻","IXL","Do 15 minutes of IXL."),
+  T("draw","18:50","🖍️","Drawing","Draw anything you like. Then show your family!"),
+  R("19:15","🛁","Bath time"),
+  R("19:40","📚","Read before bed","Pick a book and read in bed until lights out."),
+  R("20:00","😴","Lights out","Early bus tomorrow. Sleep tight!")
+];
+
+/* Wednesday: class 6–7 pm */
+const wednesday = () => [
+  ...morning.slice(0,-1),
+  R("15:00","🍎","Snack & rest","Quick snack. Busy afternoon today!"),
+  T("read","15:20","📖","Reading","Read for 15 minutes."),
+  T("math","15:40","➕","Math","Do your math page."),
+  T("ixl","16:00","💻","IXL","Do 15 minutes of IXL."),
+  T("write","16:15","✏️","Writing","Write 3 sentences."),
+  T("sport","16:30","⚽","Outdoor sports practice","Practice outside until the clock says 5:15."),
+  R("17:15","🧼","Come in & wash up"),
+  R("17:30","🍝","Early dinner"),
+  R("17:50","👟","Get ready & leave for class","Shoes on, grab your things."),
+  CLASS("18:00","Your Wednesday class. Have fun!"),
+  T("draw","19:00","🖍️","Drawing","Draw something from your class today."),
+  R("19:20","🛁","Bath time"),
+  R("19:40","📚","Read before bed","Pick a book and read in bed until lights out."),
+  R("20:00","😴","Lights out","Early bus tomorrow. Sleep tight!")
+];
+
+/* Thursday: class 4–5 pm */
+const thursday = () => [
+  ...morning.slice(0,-1),
+  R("15:00","🍎","Snack & rest","Quick snack. Class is soon!"),
+  T("read","15:15","📖","Reading","Read for 15 minutes."),
+  T("math","15:35","➕","Math","Do your math page."),
+  R("15:50","👟","Get ready & leave for class","Shoes on, grab your things."),
+  CLASS("16:00","Your Thursday class. Have fun!"),
+  R("17:00","🍌","Home & snack"),
+  T("sport","17:15","⚽","Outdoor sports practice","Practice outside until the clock says 6:00."),
+  R("18:00","🧼","Come in & wash up"),
+  R("18:15","🍝","Dinner"),
+  T("ixl","18:45","💻","IXL","Do 15 minutes of IXL."),
+  T("write","19:00","✏️","Writing","Write 3 sentences."),
+  R("19:15","🛁","Bath time"),
+  R("19:40","📚","Read before bed","Pick a book and read in bed until lights out."),
+  R("20:00","😴","Lights out","Early bus tomorrow. Sleep tight!")
+];
+
+/* Saturday / Sunday */
+const weekend = (sunday) => [
+  R("08:00","🌅","Wake up & get ready","Brush teeth, get dressed, make your bed."),
+  R("08:30","🥞","Breakfast"),
+  T("read","09:00","📖","Reading","Read for 20 minutes. Tell someone what happened!"),
+  R("09:30","🧸","Play break"),
+  T("math","10:00","➕","Math","Do your math page."),
+  R("10:30","🍎","Snack & play"),
+  T("sport","11:00","⚽","Outdoor sports practice","A whole hour outside! Catching, kicking or tennis."),
+  R("12:00","🧼","Come in & wash up"),
+  R("12:30","🍽️","Lunch"),
+  R("13:00","👨‍👩‍👦","Quiet time or family time"),
+  T("ixl","14:00","💻","IXL","Do 20 minutes of IXL."),
+  T("write","14:30","✏️","Writing","Write about your weekend in 3–4 sentences."),
+  R("15:00","🧩","Snack & free play"),
+  T("draw","16:00","🖍️","Drawing","Take your time and make something big!"),
+  R("16:30","🌳","Free play & family time"),
+  R("18:00","🍝","Dinner"),
+  TV("18:30", "Get today's stars to unlock it. Your school-week stars decide how long!"),
+  ...(sunday
+    ? [R("19:15","🎒","Pack your school bag","Ready for Monday!"), R("19:25","🛁","Bath time"), R("19:45","📚","Read before bed","Pick a book and read in bed until lights out."), R("20:00","😴","Lights out","School tomorrow. Sleep tight!")]
+    : [R("19:30","🛁","Bath time"), R("19:50","📚","Read before bed","Pick a book and read in bed until lights out."), R("20:15","😴","Lights out","Great job today. Sleep tight!")])
+];
+
+/* JS day numbers: 0 = Sunday */
+function defaultDay(d){
+  const list = d===0?weekend(true): d===6?weekend(false): d===3?wednesday(): d===4?thursday(): regularDay();
+  if(d===5){ const last=list[list.length-1]; last.time="20:15"; last.tip="Weekend tomorrow! Sleep tight!"; }
+  return list.map((it,i)=>({...it, id: it.id || ("r"+i)}));
+}
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const TAB_ORDER = [1,2,3,4,5,6,0];
+const TAB_NOTE = {0:"Weekend",1:"School",2:"School",3:"Class 6pm",4:"Class 4pm",5:"School",6:"Weekend"};
+
+/* ---------- Storage ---------- */
+const S = {
+  get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+function dateKey(d=new Date()){return "sw-done-"+d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
+
+let cfg = S.get("sw-config");
+if(!cfg || typeof cfg!=="object" || !cfg.days) cfg = {name:"", days:{}};
+if(cfg.v!==4){ for(const d of [0,1,2,3,4,5,6]) delete cfg.days[d]; cfg.v=4; }
+for(let d=0; d<7; d++){ if(!Array.isArray(cfg.days[d]) || !cfg.days[d].length) cfg.days[d]=defaultDay(d); }
+
+let today = new Date().getDay();
+let viewDay = today;
+let curKey = dateKey();
+let done = S.get(curKey) || {};
+let soundOn=false, audioCtx=null, lastIdx=null;
+
+const $ = id => document.getElementById(id);
+const toMin = t => {const [h,m]=t.split(":").map(Number);return h*60+m};
+const nowMin = () => {const d=new Date();return d.getHours()*60+d.getMinutes()};
+function fmt(t){let [h,m]=t.split(":").map(Number);const ap=h<12?"am":"pm";h=h%12||12;return h+":"+String(m).padStart(2,"0")+" "+ap}
+const sorted = d => [...cfg.days[d]].sort((a,b)=>toMin(a.time)-toMin(b.time));
+const tasksOf = d => sorted(d).filter(i=>i.type==="task");
+const allDoneToday = () => tasksOf(today).every(t=>done[t.id]);
+
+/* Weekday stars add weekend TV: 10 min base + 10 min per full school day */
+function weekInfo(){
+  const now=new Date(); now.setHours(12,0,0,0);
+  const dw=now.getDay(), back=dw===0?6:dw-1;
+  const mon=new Date(now); mon.setDate(now.getDate()-back);
+  const days=[];
+  for(let i=0;i<5;i++){
+    const d=new Date(mon); d.setDate(mon.getDate()+i);
+    const key=dateKey(d), isToday=key===curKey, future=d>now&&!isToday;
+    const rec=isToday?done:(S.get(key)||{});
+    const ts=tasksOf(d.getDay()), got=ts.filter(t=>rec[t.id]).length;
+    days.push({name:DAY_NAMES[d.getDay()].slice(0,3), full:ts.length>0&&got===ts.length, got, total:ts.length, isToday, future});
+  }
+  const full=days.filter(x=>x.full).length;
+  return {days, full, minutes:10+10*full};
+}
+function renderWeek(){
+  const w=weekInfo(), wknd=today===0||today===6;
+  $("week").innerHTML=`<p>${wknd?`Your school week earned <b>${w.minutes} minutes</b> of TV for each weekend day!`:`Every school day with all your stars adds 10 minutes to weekend TV.`}</p>
+  <div class="wkrow">${w.days.map(d=>`<div class="wk ${d.full?"full":""} ${d.isToday?"tod":""}"><div class="wkc">${d.full?"⭐":d.future?"":d.isToday?d.got+"/"+d.total:"–"}</div><small>${d.name}</small></div>`).join("")}
+  <div class="wk tv"><div class="wkc">📺</div><small>${w.minutes} min</small></div></div>`;
+}
+
+function clockSVG(h,m,s){
+  const hr=((h%12)+m/60)*30, mn=(m+(s||0)/60)*6;
+  let ticks="";
+  for(let i=0;i<12;i++){
+    const a=i*30*Math.PI/180, r1=40, r2=i%3===0?33:36;
+    ticks+=`<line x1="${50+r1*Math.sin(a)}" y1="${50-r1*Math.cos(a)}" x2="${50+r2*Math.sin(a)}" y2="${50-r2*Math.cos(a)}" stroke="var(--muted)" stroke-width="${i%3===0?3:1.5}" stroke-linecap="round"/>`;
+  }
+  const nums=[12,3,6,9].map((n,i)=>{const a=i*90*Math.PI/180;return `<text x="${50+25*Math.sin(a)}" y="${50-25*Math.cos(a)+4.5}" text-anchor="middle" font-size="12" font-weight="800" fill="var(--ink)" font-family="Baloo 2, sans-serif">${n}</text>`}).join("");
+  const sec = s===undefined?"":`<line x1="50" y1="56" x2="50" y2="14" stroke="var(--berry)" stroke-width="1.5" transform="rotate(${s*6} 50 50)"/>`;
+  return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="var(--face)" stroke="var(--pumpkin)" stroke-width="6"/>${ticks}${nums}
+  <line x1="50" y1="50" x2="50" y2="28" stroke="var(--hand)" stroke-width="6" stroke-linecap="round" transform="rotate(${hr} 50 50)"/>
+  <line x1="50" y1="50" x2="50" y2="15" stroke="var(--sky)" stroke-width="4" stroke-linecap="round" transform="rotate(${mn} 50 50)"/>
+  ${sec}<circle cx="50" cy="50" r="4" fill="var(--hand)"/></svg>`;
+}
+
+function currentIndex(){const n=nowMin();let idx=-1;sorted(today).forEach((it,i)=>{if(toMin(it.time)<=n)idx=i});return idx}
+
+/* ---------- Rendering ---------- */
+function renderHero(){
+  const list=sorted(today), idx=currentIndex();
+  const name=(cfg.name||"").trim();
+  $("title").textContent = name ? name+"'s Day" : "My Day";
+  document.title = $("title").textContent;
+  $("hello").textContent = new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  if(idx<0){
+    $("nowWhat").textContent="😴 Sleeping time";
+    $("nextLine").innerHTML=`Your day starts at <b>${fmt(list[0].time)}</b>`;
+  }else{
+    const cur=list[idx];
+    let label=cur.emoji+" "+cur.title;
+    if(cur.type==="reward"&&!allDoneToday()) label="🔒 Finish your stars first";
+    $("nowWhat").textContent=label;
+    const nx=list[idx+1];
+    $("nextLine").innerHTML = nx ? `Next: ${nx.emoji} <b>${nx.title}</b> at <b>${fmt(nx.time)}</b>` : "That's the end of the day!";
+  }
+}
+
+function renderTabs(){
+  $("tabs").innerHTML = TAB_ORDER.map(d=>`<button class="tab ${d===today?"today":""} ${d===viewDay?"sel":""}" data-d="${d}" aria-pressed="${d===viewDay}">${DAY_NAMES[d].slice(0,3)}<small>${d===today?"Today":TAB_NOTE[d]}</small></button>`).join("");
+  const p=$("preview");
+  if(viewDay!==today){p.innerHTML=`You're looking at <b>${DAY_NAMES[viewDay]}</b>. <button id="backToday">Go back to today</button>`;p.classList.add("show")}
+  else p.classList.remove("show");
+}
+
+function renderStars(){
+  const t=tasksOf(viewDay), isToday=viewDay===today;
+  const got=isToday?t.filter(x=>done[x.id]).length:0;
+  const hasTV=sorted(viewDay).some(i=>i.type==="reward");
+  $("slots").innerHTML=t.map(x=>{const g=isToday&&done[x.id];return `<div class="slot ${g?"got":""}" title="${x.title}">${g?"⭐":x.emoji}</div>`}).join("");
+  $("starText").textContent = !isToday
+    ? `${DAY_NAMES[viewDay]} has ${t.length} stars to earn.`
+    : got===t.length ? (hasTV ? "You got all your stars! TV time is unlocked 🎉" : "All your stars! +10 minutes of weekend TV 🎉")
+    : `${got} of ${t.length} stars. ` + (hasTV ? "Finish them all to unlock TV time!" : "Get them all to add 10 minutes to weekend TV!");
+}
+
+function renderList(){
+  const list=sorted(viewDay), isToday=viewDay===today, idx=isToday?currentIndex():-2;
+  $("list").innerHTML=list.map((it,i)=>{
+    const [h,m]=it.time.split(":").map(Number);
+    const isNow=i===idx, past=isToday&&i<idx;
+    const tag=isNow?'<span class="nowtag">Now</span>':"";
+    const tip=it.tip?`<div class="tip">${it.tip}</div>`:"";
+    let body;
+    if(it.type==="task"){
+      const d=isToday&&!!done[it.id];
+      body=`<div class="item task ${isNow?"now":""} ${d?"isdone":""}" style="--c:${it.c||"var(--pumpkin)"}">${tag}
+        <div class="ttl">${it.emoji} ${it.title}</div>${tip}
+        <button class="didit" data-id="${it.id}" aria-pressed="${d}" ${isToday?"":"disabled"}>${d?"✅ Done! Tap to undo":"I did it! ⭐"}</button></div>`;
+    }else if(it.type==="reward"){
+      const open=isToday&&allDoneToday(), mins=weekInfo().minutes;
+      body=`<div class="item ticket ${open?"open":""}">${tag}
+        <div class="ttl">${open?"📺":"🔒"} ${it.title}</div>
+        <div class="tip">${open?`You earned ${mins} minutes! Enjoy your show.`:`Locked. Get today's stars to open ${mins} minutes of TV.`}</div></div>`;
+    }else if(it.type==="class"){
+      body=`<div class="item klass ${isNow?"now":""}">${tag}<div class="ttl">${it.emoji} ${it.title}</div>${tip}</div>`;
+    }else if(it.type==="school"){
+      body=`<div class="item school ${isNow?"now":""}">${tag}<div class="ttl">${it.emoji} ${it.title}</div>${tip}</div>`;
+    }else{
+      body=`<div class="item routine ${isNow?"now":""}">${tag}${isNow?"<br>":""}<span class="ttl">${it.emoji} ${it.title}</span>${tip}</div>`;
+    }
+    return `<li class="row ${past?"past":""}" id="row-${it.id}"><div class="mini">${clockSVG(h,m)}<div class="t">${fmt(it.time)}</div></div>${body}</li>`;
+  }).join("");
+}
+
+function renderAll(){renderHero();renderTabs();renderStars();renderWeek();renderList()}
+function tickBig(){const d=new Date();$("bigclock").innerHTML=clockSVG(d.getHours(),d.getMinutes(),d.getSeconds())}
+
+function chime(){
+  if(!soundOn||!audioCtx)return;
+  [660,880,990].forEach((f,i)=>{
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime+i*0.22;
+    o.frequency.value=f;o.type="sine";g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.3,t+0.03);g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+    o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+0.55);
+  });
+}
+function flash(msg){const f=$("flash");f.textContent=msg;f.style.display="block";clearTimeout(f._t);f._t=setTimeout(()=>f.style.display="none",6000)}
+function confetti(){
+  const e=["⭐","🎉","⚽","🖍️","🌟"];
+  for(let i=0;i<30;i++){const s=document.createElement("span");s.className="confetti";s.textContent=e[i%e.length];
+    s.style.left=Math.random()*100+"vw";s.style.animationDelay=Math.random()*0.8+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),3600)}
+}
+
+function checkChange(){
+  // New day? switch to it and load fresh stars
+  if(dateKey()!==curKey){
+    curKey=dateKey();done=S.get(curKey)||{};
+    const wasViewingToday=viewDay===today;today=new Date().getDay();
+    if(wasViewingToday)viewDay=today;lastIdx=null;renderAll();
+  }
+  const idx=currentIndex();
+  if(lastIdx!==null&&idx!==lastIdx&&idx>=0){
+    const it=sorted(today)[idx];renderAll();
+    flash(`It's ${fmt(it.time)}! Time for ${it.emoji} ${it.title}`);chime();
+    if(viewDay===today){const r=$("row-"+it.id);if(r)r.scrollIntoView({behavior:"smooth",block:"center"})}
+  }else if(idx!==lastIdx){renderAll()}
+  lastIdx=idx;
+}
+
+/* ---------- Events ---------- */
+$("list").addEventListener("click",e=>{
+  const b=e.target.closest(".didit");if(!b||b.disabled)return;
+  const id=b.dataset.id, was=allDoneToday();
+  done[id]=!done[id];S.set(curKey,done);renderAll();
+  if(done[id]){chime();flash("Great job! ⭐ You earned a star!")}
+  if(!was&&allDoneToday()){confetti();flash(sorted(today).some(i=>i.type==="reward")?"All stars! TV time is unlocked 📺":"All stars! +10 minutes of weekend TV 📺")}
+});
+$("tabs").addEventListener("click",e=>{
+  const b=e.target.closest(".tab");if(!b)return;
+  viewDay=Number(b.dataset.d);renderAll();
+  if($("editor").classList.contains("show"))buildEditor();
+});
+$("preview").addEventListener("click",e=>{
+  if(e.target.id==="backToday"){viewDay=today;renderAll();if($("editor").classList.contains("show"))buildEditor();
+    const idx=currentIndex();if(idx>=0){const r=$("row-"+sorted(today)[idx].id);if(r)r.scrollIntoView({block:"center"})}}
+});
+$("soundBtn").onclick=()=>{
+  soundOn=!soundOn;
+  if(soundOn){try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();audioCtx.resume();chime()}catch(e){}}
+  $("soundBtn").textContent=soundOn?"🔔 Chime is on":"🔔 Turn on chime";
+  $("soundBtn").classList.toggle("on",soundOn);
+};
+$("resetBtn").onclick=()=>{if(confirm("Clear today's stars?")){done={};S.set(curKey,done);renderAll()}};
+
+function buildEditor(){
+  $("nameIn").value=cfg.name||"";
+  $("edTitle").textContent="Editing "+DAY_NAMES[viewDay]+" (tap another day above to edit it)";
+  $("edRows").innerHTML=sorted(viewDay).map(it=>`<div class="er" data-id="${it.id}">
+    <input type="time" value="${it.time}" class="tin" aria-label="Time for ${it.title}">
+    <input value="${it.emoji} ${it.title}" class="nin" aria-label="Name">
+    <input value="${(it.tip||"").replace(/"/g,"&quot;")}" class="tipin pin" placeholder="Helper text (optional)" aria-label="Helper text"></div>`).join("");
+}
+$("editBtn").onclick=()=>{const ed=$("editor");ed.classList.toggle("show");if(ed.classList.contains("show"))buildEditor()};
+$("saveBtn").onclick=()=>{
+  cfg.name=$("nameIn").value;
+  const byId=Object.fromEntries(cfg.days[viewDay].map(i=>[i.id,{...i}]));
+  document.querySelectorAll("#edRows .er").forEach(r=>{
+    const it=byId[r.dataset.id];if(!it)return;
+    const t=r.querySelector(".tin").value;if(t)it.time=t;
+    const n=r.querySelector(".nin").value.trim();
+    const m=n.match(/^(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s*(.*)$/u);
+    if(m){it.emoji=m[1];it.title=m[2]||it.title}else if(n){it.title=n}
+    it.tip=r.querySelector(".pin").value;
+  });
+  cfg.days[viewDay]=Object.values(byId);S.set("sw-config",cfg);lastIdx=currentIndex();renderAll();
+  $("editor").classList.remove("show");flash("Saved ✅");
+};
+$("defBtn").onclick=()=>{cfg.days[viewDay]=defaultDay(viewDay);S.set("sw-config",cfg);buildEditor();renderAll()};
+
+/* ---------- Start ---------- */
+tickBig();renderAll();lastIdx=currentIndex();
+setInterval(tickBig,1000);setInterval(checkChange,15000);
+setTimeout(()=>{const idx=currentIndex();if(idx>=0){const r=$("row-"+sorted(today)[idx].id);if(r)r.scrollIntoView({block:"center"})}},300);
+</script>
+</body>
+</html>
