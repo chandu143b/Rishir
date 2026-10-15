@@ -165,6 +165,7 @@ h1{font-size:30px;line-height:1.05;margin:2px 0 10px;font-weight:800}
       <button class="pbtn" id="resetBtn">↺ Clear today's stars</button>
     </div>
     <p class="note">The chime plays a little sound when it's time for the next activity. Keep this page open on a tablet or laptop. Stars reset by themselves every morning.</p>
+    <p class="note" id="syncStatus"></p>
     <div class="editor" id="editor">
       <div class="er"><span>Child's name</span><input id="nameIn" placeholder="e.g. Aarav"></div>
       <h3 id="edTitle"></h3>
@@ -179,6 +180,35 @@ h1{font-size:30px;line-height:1.05;margin:2px 0 10px;font-weight:800}
 <div class="flash" id="flash"></div>
 
 <script>
+/* ================= SYNC SETUP (optional) =================
+   To share stars between iPhone, iPad and computers:
+   1) Paste your Firebase web config below (replace null).
+   2) Change FAMILY_CODE to your own secret code (8+ letters/numbers, no spaces).
+   Every device that opens this page will then share the same stars.
+   Leave FIREBASE_CONFIG as null to keep stars on each device only.
+
+   Example of what to paste:
+   const FIREBASE_CONFIG = {
+     apiKey: "AIza...",
+     authDomain: "my-kid-schedule.firebaseapp.com",
+     databaseURL: "https://my-kid-schedule-default-rtdb.firebaseio.com",
+     projectId: "my-kid-schedule",
+     appId: "1:123:web:abc"
+   };
+*/
+
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBWcTtles5XoSdY74miFGeQpSDU9mnFwjg",
+    authDomain: "rishir-6fc3d.firebaseapp.com",
+    databaseURL: "https://rishir-6fc3d-default-rtdb.firebaseio.com",
+    projectId: "rishir-6fc3d",
+    storageBucket: "rishir-6fc3d.firebasestorage.app",
+    messagingSenderId: "875975886886",
+    appId: "1:875975886886:web:bf8a6d7905b45a5c9cbee7"
+  };
+const FAMILY_CODE = "9894001566";
+/* ========================================================= */
+
 /* ---------- Building blocks ---------- */
 const COLORS = {read:"#3B8FD9", math:"#F28C28", write:"#8A5CD1", draw:"#E2557B", ixl:"#2A9D8F", sport:"#3FA56F"};
 const R = (time, emoji, title, tip="") => ({time, emoji, title, tip, type:"routine"});
@@ -293,10 +323,13 @@ const S = {
 };
 function dateKey(d=new Date()){return "sw-done-"+d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
 
-let cfg = S.get("sw-config");
-if(!cfg || typeof cfg!=="object" || !cfg.days) cfg = {name:"", days:{}};
-if(cfg.v!==4){ for(const d of [0,1,2,3,4,5,6]) delete cfg.days[d]; cfg.v=4; }
-for(let d=0; d<7; d++){ if(!Array.isArray(cfg.days[d]) || !cfg.days[d].length) cfg.days[d]=defaultDay(d); }
+function normalizeCfg(c){
+  if(!c || typeof c!=="object" || !c.days) c = {name:"", days:{}};
+  if(c.v!==4){ c.days={}; c.v=4; }
+  for(let d=0; d<7; d++){ if(!Array.isArray(c.days[d]) || !c.days[d].length) c.days[d]=defaultDay(d); }
+  return c;
+}
+let cfg = normalizeCfg(S.get("sw-config"));
 
 let today = new Date().getDay();
 let viewDay = today;
@@ -458,7 +491,7 @@ function checkChange(){
 $("list").addEventListener("click",e=>{
   const b=e.target.closest(".didit");if(!b||b.disabled)return;
   const id=b.dataset.id, was=allDoneToday();
-  done[id]=!done[id];S.set(curKey,done);renderAll();
+  done[id]=!done[id];S.set(curKey,done);pushStar(id,done[id]);renderAll();
   if(done[id]){chime();flash("Great job! ⭐ You earned a star!")}
   if(!was&&allDoneToday()){confetti();flash(sorted(today).some(i=>i.type==="reward")?"All stars! TV time is unlocked 📺":"All stars! +10 minutes of weekend TV 📺")}
 });
@@ -477,7 +510,7 @@ $("soundBtn").onclick=()=>{
   $("soundBtn").textContent=soundOn?"🔔 Chime is on":"🔔 Turn on chime";
   $("soundBtn").classList.toggle("on",soundOn);
 };
-$("resetBtn").onclick=()=>{if(confirm("Clear today's stars?")){done={};S.set(curKey,done);renderAll()}};
+$("resetBtn").onclick=()=>{if(confirm("Clear today's stars?")){done={};S.set(curKey,done);pushReset();renderAll()}};
 
 function buildEditor(){
   $("nameIn").value=cfg.name||"";
@@ -499,14 +532,59 @@ $("saveBtn").onclick=()=>{
     if(m){it.emoji=m[1];it.title=m[2]||it.title}else if(n){it.title=n}
     it.tip=r.querySelector(".pin").value;
   });
-  cfg.days[viewDay]=Object.values(byId);S.set("sw-config",cfg);lastIdx=currentIndex();renderAll();
+  cfg.days[viewDay]=Object.values(byId);S.set("sw-config",cfg);pushConfig();lastIdx=currentIndex();renderAll();
   $("editor").classList.remove("show");flash("Saved ✅");
 };
-$("defBtn").onclick=()=>{cfg.days[viewDay]=defaultDay(viewDay);S.set("sw-config",cfg);buildEditor();renderAll()};
+$("defBtn").onclick=()=>{cfg.days[viewDay]=defaultDay(viewDay);S.set("sw-config",cfg);pushConfig();buildEditor();renderAll()};
+
+/* ---------- Sync across devices (optional) ---------- */
+let syncDb=null;
+const pad=n=>String(n).padStart(2,"0");
+const remoteKey=(d=new Date())=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+function setSyncStatus(msg){const el=$("syncStatus");if(el)el.textContent=msg}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("Could not load "+src));document.head.appendChild(s)})}
+function pushStar(id,val){ if(syncDb) syncDb.child("done/"+remoteKey()+"/"+id).set(!!val).catch(console.error) }
+function pushReset(){ if(syncDb) syncDb.child("done/"+remoteKey()).remove().catch(console.error) }
+function pushConfig(){ if(syncDb) syncDb.child("config").set(JSON.stringify(cfg)).catch(console.error) }
+
+async function startSync(){
+  if(!FIREBASE_CONFIG){setSyncStatus("📱 Stars are saved on this device only.");return}
+  if(!/^[A-Za-z0-9_-]{8,}$/.test(FAMILY_CODE)){setSyncStatus("⚠️ The family code needs 8 or more letters or numbers, with no spaces.");return}
+  try{
+    await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
+    await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js");
+    firebase.initializeApp(FIREBASE_CONFIG);
+    syncDb=firebase.database().ref("families/"+FAMILY_CODE);
+    // Upload any stars this device already had today before sync was turned on
+    const mine=Object.fromEntries(Object.entries(done).filter(([k,v])=>v));
+    if(Object.keys(mine).length) await syncDb.child("done/"+remoteKey()).update(mine);
+  }catch(e){syncDb=null;setSyncStatus("⚠️ Couldn't connect to sync. Check the Firebase settings. Stars are saved on this device for now.");console.error(e);return}
+
+  firebase.database().ref(".info/connected").on("value",s=>
+    setSyncStatus(s.val()?"☁️ Stars sync across all your devices.":"⏳ Offline. Stars will sync when you're back online."));
+
+  syncDb.child("config").on("value",snap=>{
+    const v=snap.val(); if(typeof v!=="string") return;
+    try{cfg=normalizeCfg(JSON.parse(v));S.set("sw-config",cfg);lastIdx=currentIndex();renderAll()}catch(e){console.error(e)}
+  });
+
+  const since=new Date();since.setDate(since.getDate()-10);
+  syncDb.child("done").orderByKey().startAt(remoteKey(since)).on("value",snap=>{
+    const all=snap.val()||{};
+    Object.entries(all).forEach(([rk,obj])=>{
+      const [y,m,d]=rk.split("-").map(Number);
+      S.set(dateKey(new Date(y,m-1,d)),obj||{});
+    });
+    done=all[remoteKey()]||{};
+    S.set(curKey,done);
+    renderAll();
+  },e=>{setSyncStatus("⚠️ Sync is blocked. Check the database rules in Firebase.");console.error(e)});
+}
 
 /* ---------- Start ---------- */
 tickBig();renderAll();lastIdx=currentIndex();
 setInterval(tickBig,1000);setInterval(checkChange,15000);
+startSync();
 setTimeout(()=>{const idx=currentIndex();if(idx>=0){const r=$("row-"+sorted(today)[idx].id);if(r)r.scrollIntoView({block:"center"})}},300);
 </script>
 </body>
