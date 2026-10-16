@@ -100,6 +100,13 @@ h1{font-size:30px;line-height:1.05;margin:2px 0 10px;font-weight:800}
 .ticket.open{border:3px solid var(--berry);background:var(--berry);color:#fff}
 .ticket.open .tip{color:#fff}
 
+.people{display:flex;gap:8px;margin:0 0 14px}
+.person{flex:1;border:3px solid var(--line);background:var(--paper);color:var(--ink);border-radius:16px;padding:8px 10px;font-weight:800;font-size:18px;min-height:52px}
+.person.sel{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.clist{list-style:none;margin:0;padding:0}
+.clist li{padding:6px 0;border-bottom:2px dashed var(--line);font-size:16px}
+.clist li:last-child{border-bottom:0}
+.tip.warn{color:var(--berry);font-weight:700}
 .parent{margin-top:34px;border-top:3px dashed var(--line);padding-top:16px}
 .pbtns{display:flex;gap:8px;flex-wrap:wrap}
 .pbtn{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:12px;padding:8px 14px;font-size:16px;font-weight:600}
@@ -133,6 +140,7 @@ h1{font-size:30px;line-height:1.05;margin:2px 0 10px;font-weight:800}
 </head>
 <body>
 <div class="wrap">
+  <nav class="people" id="people" aria-label="Whose schedule"></nav>
   <section class="hero">
     <div class="bigclock" id="bigclock" aria-hidden="true"></div>
     <div>
@@ -149,7 +157,7 @@ h1{font-size:30px;line-height:1.05;margin:2px 0 10px;font-weight:800}
   <nav class="tabs" id="tabs" aria-label="Pick a day"></nav>
   <div class="preview" id="preview"></div>
 
-  <section class="stars" aria-live="polite">
+  <section class="stars" id="starsBox" aria-live="polite">
     <p id="starText"></p>
     <div class="slots" id="slots"></div>
   </section>
@@ -268,9 +276,9 @@ const friday = () => [
   T("math","15:35","➕","Math","Do your math page."),
   T("ixl","15:55","💻","IXL","Do 15 minutes of IXL."),
   T("sport","16:10","⚽","Outdoor sports practice","Practice outside until the clock says 4:45."),
-  R("16:45","👟","Wash up & leave for class","Shoes on, grab your things."),
-  {time:"17:00", emoji:"🧮", title:"Math class", tip:"Your Friday math class. Have fun!", type:"class"},
-  R("18:00","🍝","Home & dinner"),
+  R("16:45","🧼","Wash up & get ready for class","Get your laptop and pencil ready."),
+  {time:"17:00", emoji:"🧮", title:"Math class", tip:"Online math class. Log in at 4:55!", type:"class"},
+  R("18:00","🍝","Dinner"),
   T("write","18:30","✏️","Writing","Write 3 sentences."),
   T("draw","18:45","🖍️","Drawing","Draw anything you like. Then show your family!"),
   R("19:15","🛁","Bath time"),
@@ -339,8 +347,10 @@ function dateKey(d=new Date()){return "sw-done-"+d.getFullYear()+"-"+(d.getMonth
 
 function normalizeCfg(c){
   if(!c || typeof c!=="object" || !c.days) c = {name:"", days:{}};
+  if(!(c.name||"").trim()) c.name="Rishir";
   if(!(c.v>=5)){ for(const d of [1,2,3,4,5]) delete c.days[d]; }
   if(!(c.v>=7)){ delete c.days[5]; c.v=7; }
+  if(!(c.v>=8)){ delete c.days[5]; c.v=8; }
   for(let d=0; d<7; d++){ if(!Array.isArray(c.days[d]) || !c.days[d].length) c.days[d]=defaultDay(d); }
   return c;
 }
@@ -398,7 +408,7 @@ function clockSVG(h,m,s){
   ${sec}<circle cx="50" cy="50" r="4" fill="var(--hand)"/></svg>`;
 }
 
-function currentIndex(){const n=nowMin();let idx=-1;sorted(today).forEach((it,i)=>{if(toMin(it.time)<=n)idx=i});return idx}
+function currentIndex(){const n=nowMin();let idx=-1;todayList().forEach((it,i)=>{if(toMin(it.time)<=n)idx=i});return idx}
 
 /* ---------- Rendering ---------- */
 function renderHero(){
@@ -467,7 +477,12 @@ function renderList(){
   }).join("");
 }
 
-function renderAll(){renderHero();renderTabs();renderStars();renderWeek();renderList()}
+function renderAll(){
+  renderPeople();
+  if(person==="mom"){renderMom();return}
+  $("starsBox").style.display="";$("editBtn").style.display="";$("resetBtn").style.display="";
+  renderHero();renderTabs();renderStars();renderWeek();renderList();
+}
 function tickBig(){const d=new Date();$("bigclock").innerHTML=clockSVG(d.getHours(),d.getMinutes(),d.getSeconds())}
 
 function chime(){
@@ -495,9 +510,9 @@ function checkChange(){
   }
   const idx=currentIndex();
   if(lastIdx!==null&&idx!==lastIdx&&idx>=0){
-    const it=sorted(today)[idx];renderAll();
+    const it=todayList()[idx];renderAll();
     flash(`It's ${fmt(it.time)}! Time for ${it.emoji} ${it.title}`);chime();
-    if(viewDay===today){const r=$("row-"+it.id);if(r)r.scrollIntoView({behavior:"smooth",block:"center"})}
+    if(person==="mom"?momOffset===0:viewDay===today){const r=$("row-"+it.id);if(r)r.scrollIntoView({behavior:"smooth",block:"center"})}
   }else if(idx!==lastIdx){renderAll()}
   lastIdx=idx;
 }
@@ -511,13 +526,13 @@ $("list").addEventListener("click",e=>{
   if(!was&&allDoneToday()){confetti();flash(sorted(today).some(i=>i.type==="reward")?"All stars! TV time is unlocked 📺":"All stars! +10 minutes of weekend TV 📺")}
 });
 $("tabs").addEventListener("click",e=>{
-  const b=e.target.closest(".tab");if(!b)return;
+  const b=e.target.closest(".tab");if(!b||person==="mom")return;
   viewDay=Number(b.dataset.d);renderAll();
   if($("editor").classList.contains("show"))buildEditor();
 });
 $("preview").addEventListener("click",e=>{
   if(e.target.id==="backToday"){viewDay=today;renderAll();if($("editor").classList.contains("show"))buildEditor();
-    const idx=currentIndex();if(idx>=0){const r=$("row-"+sorted(today)[idx].id);if(r)r.scrollIntoView({block:"center"})}}
+    const idx=currentIndex();if(idx>=0){const r=$("row-"+todayList()[idx].id);if(r)r.scrollIntoView({block:"center"})}}
 });
 $("soundBtn").onclick=()=>{
   soundOn=!soundOn;
@@ -596,11 +611,221 @@ async function startSync(){
   },e=>{setSyncStatus("⚠️ Sync is blocked. Check the database rules in Firebase.");console.error(e)});
 }
 
+/* ---------- Tapaswini's schedule ---------- */
+const MOM_NAME = "Tapaswini";
+const COURSES = {"MBA 707":"Orientation","MBA 714":"Business Statistics & Analytics","MBA 730":"Financial Accounting","MBA 800":"Strategy","MBA 804A":"Communicating Complex Information"};
+/* From the October term schedule. mon = 5:30–7:30 & 7:50–9:50 pm; exec = Executive Friday */
+const MOM_CLASSES = {
+  "2026-10-02":{kind:"exec",c1:"MBA 730",c2:"MBA 804A"},
+  "2026-10-12":{kind:"mon", c1:"MBA 714",c2:"MBA 800"},
+  "2026-10-19":{kind:"mon", c1:"MBA 804A",c2:"MBA 730"},
+  "2026-10-30":{kind:"exec",c1:"MBA 800",c2:"MBA 714"},
+  "2026-11-02":{kind:"mon", c1:"MBA 730",c2:"MBA 804A"},
+  "2026-11-09":{kind:"mon", c1:"MBA 714",c2:"MBA 800"},
+  "2026-11-20":{kind:"exec",c1:"MBA 804A",c2:"MBA 730"},
+  "2026-11-23":{kind:"mon", c1:"MBA 800",c2:"MBA 714"},
+  "2026-11-30":{kind:"mon", c1:"MBA 730",c2:"MBA 804A"},
+  "2026-12-07":{kind:"mon", c1:"MBA 800",c2:"MBA 714"}
+};
+let person = (S.get("sw-person")==="mom") ? "mom" : "kid";
+let momOffset = 0;
+const p2 = n => String(n).padStart(2,"0");
+const isoKey = d => d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const shortDate = d => d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+const fullCourse = c => c+" ("+COURSES[c]+")";
+const kidUpper = () => (cfg.name||"").trim() || "Your son";
+const kidLower = () => (cfg.name||"").trim() || "your son";
+function nextClass(from){
+  const k=isoKey(from), key=Object.keys(MOM_CLASSES).sort().find(x=>x>=k);
+  if(!key) return null;
+  const [y,m,d]=key.split("-").map(Number);
+  return {...MOM_CLASSES[key], date:new Date(y,m-1,d)};
+}
+function preCourseTip(date){
+  const t=MOM_CLASSES[isoKey(addDays(date,1))];
+  if(t) return `For tomorrow's class: ${fullCourse(t.c1)} and ${fullCourse(t.c2)}.`;
+  const n=nextClass(addDays(date,1));
+  return n ? `No class tomorrow. Next class is ${shortDate(n.date)}: ${n.c1} & ${n.c2}.` : "The term is finished. Use this time for review.";
+}
+
+function momItems(date){
+  const dw=date.getDay(), cls=MOM_CLASSES[isoKey(date)], L=[];
+  const K=kidUpper(), k=kidLower();
+  const add=(time,emoji,title,tip="",type="routine",warn=false)=>L.push({time,emoji,title,tip,type,warn});
+  const tmr=MOM_CLASSES[isoKey(addDays(date,1))];
+  const reviewTip = tmr ? `Prep for tomorrow's ${tmr.kind==="exec"?"Executive Friday":"class"}: ${tmr.c1} & ${tmr.c2}.` : "Go over today's notes and plan tomorrow.";
+  const done=()=>{L.sort((a,b)=>toMin(a.time)-toMin(b.time));L.forEach((it,i)=>it.id="m"+i);return L};
+
+  if(dw===0||dw===6){
+    add("08:00","☕","Wake up & coffee");
+    add("08:30","🍳","Breakfast");
+    add("09:00","📚","Study block 1","Readings and assignments. 1.5 hours.","study");
+    add("10:30","🍵","Morning tea break");
+    add("10:45","📚","Study block 2","Practice problems, cases or notes.","study");
+    add("12:00","🥗","Lunch");
+    add("13:00","😴","Afternoon nap","1 hour. Set an alarm for 2:00.");
+    add("14:00","☕","Afternoon coffee");
+    if(dw===6){
+      add("14:15","🌿","Relax: the afternoon is yours","Family time, an outing, or just rest. No studying!");
+      add("16:00","🍵","Afternoon tea");
+      add("18:00","🍲","Dinner");
+      add("19:00","🎬","Relaxing evening","A movie, a walk, or time with the kids.");
+    }else{
+      add("14:15","📝","Pre-course work: part 1",preCourseTip(date),"study");
+      add("16:00","🍵","Afternoon tea");
+      add("16:15","📝","Pre-course work: part 2","Readings and case prep.","study");
+      add("18:00","🍲","Dinner");
+      add("19:00","📝","Pre-course work: part 3","Finish anything due and make notes for class.","study");
+      add("20:30","🎒","Plan the week & pack for Monday");
+    }
+    add("21:00","🌙","Day ends: wind down","Screens off, relax.");
+    add("22:00","😴","Sleep");
+    return done();
+  }
+
+  add("06:00","☕","Wake up & coffee");
+  add("06:15","👨‍👩‍👦","Family morning & school bus","Kids' breakfast. The bus comes at 6:50.");
+  add("07:00","📚","Study block 1", cls?`Review for today's class: ${cls.c1} & ${cls.c2}.`:"Readings and assignments. 1.5 hours.","study");
+  add("08:30","🍳","Breakfast & coffee");
+  add("09:00","📚","Study block 2","Practice problems, cases or notes.","study");
+  add("10:30","🍵","Morning tea break");
+
+  if(cls && cls.kind==="exec"){
+    add("10:45","🚗","Get ready & travel to campus");
+    add("11:40","🧒","Aarya pickup","⚠️ You'll be on campus. Ask someone else to pick up Aarya today.","routine",true);
+    add("12:00","🎤","Executive Friday: lunch & speaker","Required. 12:00–2:00 pm.","class");
+    add("14:15","🏠",`${K} home from school`,"⚠️ Make sure someone is home when the bus comes at 2:15.","routine",true);
+    add("14:30","🎓",`Class 1: ${cls.c1}`,`${COURSES[cls.c1]} · 2:30–4:30 pm`,"class");
+    add("16:45","🎓",`Class 2: ${cls.c2}`,`${COURSES[cls.c2]} · 4:45–6:45 pm`,"class");
+    add("17:00","🧮",`${K}'s math class`,"⚠️ Online class 5–6 pm. Make sure someone helps him log in. You're in class until 6:45.","routine",true);
+    add("18:45","🚗","Head home");
+    add("19:15","🍲","Late dinner & family time");
+    add("20:00","🗂️","Light review",reviewTip,"study");
+  } else {
+    add("10:45","📚","Study block 3","Short session: notes and review.","study");
+    add("11:30","🚗","Leave for Aarya pickup");
+    add("11:40","🧒","Aarya pickup","Back home by 12:15 pm.");
+    add("12:15","🥗","Lunch");
+    add("13:00","😴","Afternoon nap","1 hour. Set an alarm for 2:00.");
+    add("14:00","☕","Afternoon coffee");
+    add("14:15","🏠",`${K} home from school`,"The bus arrives at 2:15.");
+    add("14:35","🍽️","Family food time");
+    if(cls){
+      add("15:15","📝","Pre-class review",`Final review for ${cls.c1} and ${cls.c2}.`,"study");
+      add("16:30","🍵","Afternoon tea & early dinner");
+      add("17:00","🚗","Get ready & leave for class");
+      add("17:30","🎓",`Class 1: ${cls.c1}`,`${COURSES[cls.c1]} · 5:30–7:30 pm`,"class");
+      add("19:30","☕","Break between classes","20 minutes. Grab a snack.");
+      add("19:50","🎓",`Class 2: ${cls.c2}`,`${COURSES[cls.c2]} · 7:50–9:50 pm`,"class");
+      add("21:50","🌙","Class done: wind down","Head home and relax.");
+      add("22:15","😴","Sleep","A little later than usual tonight.");
+      return done();
+    }
+    if(dw===4){
+      add("15:15","📝","Study block 4","Assignments. Your husband takes the kids to class.","study");
+      add("16:30","🍵","Afternoon tea break");
+      add("16:45","📝","Study block 5","Quiet study while he's at class.","study");
+      add("17:15","🌳","Family & outdoor time");
+      add("18:15","🍲","Dinner");
+    } else {
+      add("15:15","📝","Study block 4","Assignments while the kids do homework.","study");
+      add("16:30","🍵","Afternoon tea break");
+      if(dw===3){
+        add("16:45","🌳","Family & outdoor time");
+        add("17:30","🍲","Early family dinner");
+        add("18:00","📝","Study block 5","Quiet study while he's at class. Your husband handles drop-off and pickup.","study");
+      } else if(dw===5){
+        add("16:55","💻",`Help ${k} log in to math class`,"Online class, 5–6 pm.");
+        add("17:00","📝","Study block 5","Quiet study while he's in class.","study");
+        add("18:00","🍲","Dinner");
+      } else {
+        add("16:45","🌳","Family & outdoor time");
+        add("18:00","🍲","Dinner");
+      }
+    }
+    const ex = 19*60;
+    const hm = m => p2(Math.floor(m/60))+":"+p2(m%60);
+    add(hm(ex),"🏃‍♀️","Exercise","30 minutes while the kids have their bath.");
+    add(hm(ex+30),"🛁","Bath time","30 minutes for you.");
+    add(hm(ex+60),"🌛","Kids' bedtime","Stories and tuck-in until 8:30.");
+    add("20:30","🗂️","Review & plan tomorrow",reviewTip,"study");
+  }
+  add("21:00","🌙","Day ends: wind down","Screens off, relax.");
+  add("22:00","😴","Sleep");
+  return done();
+}
+
+function todayList(){ return person==="mom" ? momItems(new Date()) : sorted(today); }
+
+function renderPeople(){
+  const kn=((cfg.name||"").trim()||"Rishir")+"'s Day";
+  $("people").innerHTML=`<button class="person ${person==="kid"?"sel":""}" data-p="kid" aria-pressed="${person==="kid"}">⭐ ${kn}</button>
+    <button class="person ${person==="mom"?"sel":""}" data-p="mom" aria-pressed="${person==="mom"}">📚 ${MOM_NAME}'s Day</button>`;
+}
+
+function renderMom(){
+  $("starsBox").style.display="none";$("editBtn").style.display="none";$("resetBtn").style.display="none";
+  $("editor").classList.remove("show");
+  const now=new Date(), list=momItems(now), idx=currentIndex();
+  $("title").textContent=MOM_NAME+"'s Day"; document.title=$("title").textContent;
+  $("hello").textContent=now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  if(idx<0){
+    $("nowWhat").textContent="😴 Sleeping time";
+    $("nextLine").innerHTML=`Your day starts at <b>${fmt(list[0].time)}</b>`;
+  }else{
+    const cur=list[idx], nx=list[idx+1];
+    $("nowWhat").textContent=cur.emoji+" "+cur.title;
+    $("nextLine").innerHTML = nx ? `Next: ${nx.emoji} <b>${nx.title}</b> at <b>${fmt(nx.time)}</b>` : "That's the end of the day!";
+  }
+  // Day tabs: today + next 6 days
+  $("tabs").innerHTML=[0,1,2,3,4,5,6].map(o=>{
+    const d=addDays(now,o), c=MOM_CLASSES[isoKey(d)], dw=d.getDay();
+    const note = o===0 ? "Today" : c ? (c.kind==="exec"?"Exec Fri":"Class") : (dw===0||dw===6?"Weekend":String(d.getDate()));
+    return `<button class="tab ${o===0?"today":""} ${o===momOffset?"sel":""}" data-o="${o}" aria-pressed="${o===momOffset}">${DAY_NAMES[dw].slice(0,3)}<small>${note}</small></button>`;
+  }).join("");
+  const vd=addDays(now,momOffset), p=$("preview");
+  if(momOffset){p.innerHTML=`You're looking at <b>${vd.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</b>. <button id="backToday">Go back to today</button>`;p.classList.add("show")}
+  else p.classList.remove("show");
+  // Upcoming classes
+  const tk=isoKey(now), up=Object.keys(MOM_CLASSES).sort().filter(x=>x>=tk).slice(0,5);
+  $("week").innerHTML = `<p>📅 Upcoming classes</p>` + (up.length ? `<ul class="clist">${up.map(key=>{
+      const [y,m,d]=key.split("-").map(Number), c=MOM_CLASSES[key];
+      return `<li><b>${shortDate(new Date(y,m-1,d))}</b> · ${c.kind==="exec"?"Executive Friday, 12:00 pm":"5:30 pm"} · ${c.c1} & ${c.c2}</li>`;
+    }).join("")}</ul>` : `<p class="note">The term is finished. 🎉</p>`);
+  // Timeline
+  const vlist=momOffset?momItems(vd):list, vidx=momOffset?-2:idx;
+  $("list").innerHTML=vlist.map((it,i)=>{
+    const [h,m]=it.time.split(":").map(Number), isNow=i===vidx, past=!momOffset&&i<vidx;
+    const tag=isNow?'<span class="nowtag">Now</span>':"";
+    const tip=it.tip?`<div class="tip ${it.warn?"warn":""}">${it.tip}</div>`:"";
+    let body;
+    if(it.type==="study") body=`<div class="item task ${isNow?"now":""}" style="--c:var(--sky)">${tag}<div class="ttl">${it.emoji} ${it.title}</div>${tip}</div>`;
+    else if(it.type==="class") body=`<div class="item klass ${isNow?"now":""}">${tag}<div class="ttl">${it.emoji} ${it.title}</div>${tip}</div>`;
+    else body=`<div class="item routine ${isNow?"now":""}">${tag}${isNow?"<br>":""}<span class="ttl">${it.emoji} ${it.title}</span>${tip}</div>`;
+    return `<li class="row ${past?"past":""}" id="row-${it.id}"><div class="mini">${clockSVG(h,m)}<div class="t">${fmt(it.time)}</div></div>${body}</li>`;
+  }).join("");
+}
+
+$("people").addEventListener("click",e=>{
+  const b=e.target.closest(".person");if(!b)return;
+  person=b.dataset.p;S.set("sw-person",person);momOffset=0;lastIdx=currentIndex();renderAll();
+  const idx=currentIndex();if(idx>=0){const r=$("row-"+todayList()[idx].id);if(r)r.scrollIntoView({block:"center"})}
+});
+$("tabs").addEventListener("click",e=>{
+  if(person!=="mom")return;
+  const b=e.target.closest(".tab");if(!b)return;
+  momOffset=Number(b.dataset.o)||0;renderAll();
+});
+$("preview").addEventListener("click",e=>{
+  if(person==="mom"&&e.target.id==="backToday"){momOffset=0;renderAll()}
+});
+
 /* ---------- Start ---------- */
 tickBig();renderAll();lastIdx=currentIndex();
 setInterval(tickBig,1000);setInterval(checkChange,15000);
 startSync();
-setTimeout(()=>{const idx=currentIndex();if(idx>=0){const r=$("row-"+sorted(today)[idx].id);if(r)r.scrollIntoView({block:"center"})}},300);
+setTimeout(()=>{const idx=currentIndex();if(idx>=0){const r=$("row-"+todayList()[idx].id);if(r)r.scrollIntoView({block:"center"})}},300);
 </script>
 </body>
 </html>
