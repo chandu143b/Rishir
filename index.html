@@ -253,6 +253,9 @@ const wednesday = () => [
   R("20:00","😴","Lights out","Early bus tomorrow. Sleep tight!")
 ];
 
+/* Friday: math class 6–7 pm (same afternoon plan as Wednesday) */
+const friday = () => wednesday().map(it => it.type==="class" ? {...it, emoji:"🧮", title:"Math class", tip:"Your Friday math class. Have fun!"} : it);
+
 /* Thursday: class 4–5 pm */
 const thursday = () => [
   ...morning,
@@ -297,13 +300,13 @@ const weekend = (sunday) => [
 
 /* JS day numbers: 0 = Sunday */
 function defaultDay(d){
-  const list = d===0?weekend(true): d===6?weekend(false): d===3?wednesday(): d===4?thursday(): regularDay();
+  const list = d===0?weekend(true): d===6?weekend(false): d===3?wednesday(): d===4?thursday(): d===5?friday(): regularDay();
   if(d===5){ const last=list[list.length-1]; last.time="20:15"; last.tip="Weekend tomorrow! Sleep tight!"; }
   return list.map((it,i)=>({...it, id: it.id || ("r"+i)}));
 }
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const TAB_ORDER = [1,2,3,4,5,6,0];
-const TAB_NOTE = {0:"Weekend",1:"School",2:"School",3:"Class 6pm",4:"Class 4pm",5:"School",6:"Weekend"};
+const TAB_NOTE = {0:"Weekend",1:"School",2:"School",3:"Class 6pm",4:"Class 4pm",5:"Class 6pm",6:"Weekend"};
 
 /* ---------- Storage ---------- */
 const S = {
@@ -314,7 +317,8 @@ function dateKey(d=new Date()){return "sw-done-"+d.getFullYear()+"-"+(d.getMonth
 
 function normalizeCfg(c){
   if(!c || typeof c!=="object" || !c.days) c = {name:"", days:{}};
-  if(c.v!==5){ for(const d of [1,2,3,4,5]) delete c.days[d]; c.v=5; }
+  if(!(c.v>=5)){ for(const d of [1,2,3,4,5]) delete c.days[d]; }
+  if(!(c.v>=6)){ delete c.days[5]; c.v=6; }
   for(let d=0; d<7; d++){ if(!Array.isArray(c.days[d]) || !c.days[d].length) c.days[d]=defaultDay(d); }
   return c;
 }
