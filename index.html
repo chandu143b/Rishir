@@ -261,8 +261,22 @@ const wednesday = () => [
   R("20:00","😴","Lights out","Early bus tomorrow. Sleep tight!")
 ];
 
-/* Friday: math class 6–7 pm (same afternoon plan as Wednesday) */
-const friday = () => wednesday().map(it => it.type==="class" ? {...it, emoji:"🧮", title:"Math class", tip:"Your Friday math class. Have fun!"} : it);
+/* Friday: math class 5–6 pm */
+const friday = () => [
+  ...morning,
+  T("read","15:15","📖","Reading","Read for 15 minutes."),
+  T("math","15:35","➕","Math","Do your math page."),
+  T("ixl","15:55","💻","IXL","Do 15 minutes of IXL."),
+  T("sport","16:10","⚽","Outdoor sports practice","Practice outside until the clock says 4:45."),
+  R("16:45","👟","Wash up & leave for class","Shoes on, grab your things."),
+  {time:"17:00", emoji:"🧮", title:"Math class", tip:"Your Friday math class. Have fun!", type:"class"},
+  R("18:00","🍝","Home & dinner"),
+  T("write","18:30","✏️","Writing","Write 3 sentences."),
+  T("draw","18:45","🖍️","Drawing","Draw anything you like. Then show your family!"),
+  R("19:15","🛁","Bath time"),
+  R("19:40","📚","Read before bed","Pick a book and read in bed until lights out."),
+  R("20:15","😴","Lights out","Weekend tomorrow! Sleep tight!")
+];
 
 /* Thursday: class 4–5 pm */
 const thursday = () => [
@@ -314,7 +328,7 @@ function defaultDay(d){
 }
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const TAB_ORDER = [1,2,3,4,5,6,0];
-const TAB_NOTE = {0:"Weekend",1:"School",2:"School",3:"Class 6pm",4:"Class 4pm",5:"Class 6pm",6:"Weekend"};
+const TAB_NOTE = {0:"Weekend",1:"School",2:"School",3:"Class 6pm",4:"Class 4pm",5:"Class 5pm",6:"Weekend"};
 
 /* ---------- Storage ---------- */
 const S = {
@@ -326,7 +340,7 @@ function dateKey(d=new Date()){return "sw-done-"+d.getFullYear()+"-"+(d.getMonth
 function normalizeCfg(c){
   if(!c || typeof c!=="object" || !c.days) c = {name:"", days:{}};
   if(!(c.v>=5)){ for(const d of [1,2,3,4,5]) delete c.days[d]; }
-  if(!(c.v>=6)){ delete c.days[5]; c.v=6; }
+  if(!(c.v>=7)){ delete c.days[5]; c.v=7; }
   for(let d=0; d<7; d++){ if(!Array.isArray(c.days[d]) || !c.days[d].length) c.days[d]=defaultDay(d); }
   return c;
 }
